@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# dados locais
+data/raw/*
+data/processed/*
+data/index/*
+
+# manter placeholders
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/index/.gitkeep
