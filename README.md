@@ -1,4 +1,4 @@
-# 📘 README.md — RAG FastAPI (Local | Clean Architecture | Portfólio FIAP)
+# 📘 RAG FastAPI (Local | Clean Architecture)
 
 ## 🧠 Visão Geral
 
