@@ -4,6 +4,7 @@ from fastapi import status
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 
+
 @pytest.mark.asyncio
 async def test_healthcheck():
     transport = ASGITransport(app=app)
