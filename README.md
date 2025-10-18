@@ -1,62 +1,65 @@
-# 📘 RAG FastAPI (Local | Clean Architecture)
+# 🧠 RAG FastAPI
 
-## 🧠 Visão Geral
-
-Este projeto implementa uma **API de RAG (Retrieval-Augmented Generation)** construída em **FastAPI**, organizada segundo os princípios de **Clean Architecture**, preparado para integrações futuras com LLMs.
-
-A aplicação está sendo desenvolvida em camadas bem definidas:
-- **Domain** → Entidades, Repositórios e Interfaces (sem dependências externas)
-- **Use Cases** → Regras de negócio puras e independentes de infraestrutura
-- **Interface Adapters** → Controllers, DTOs e APIs (FastAPI)
-- **Infrastructure** → Implementações concretas (armazenamento local, extração de texto via `pypdf`, chunking, etc.)
-- **App/Core** → Configurações, logging e injeção de dependências (Container)
+Microserviço em **FastAPI** estruturado com **Clean Architecture**, criado para servir como núcleo de um sistema **RAG (Retrieval-Augmented Generation)**.  
+Atualmente, o projeto faz o pipeline completo de **ingestão de documentos**, **extração de texto**, **chunking**, e agora **indexação em vector store (in-memory)** — preparando o terreno para integração com **ChromaDB** e LLMs (fase seguinte).
 
 ---
 
-## ⚙️ Estrutura de Pastas
+## 📂 Estrutura do Projeto
 
 ```
 rag-fastapi/
+│
 ├─ app/
-│  ├─ core/                 # Configurações e logging
-│  ├─ container.py          # Injeção de dependências
-│  ├─ main.py               # Criação da aplicação FastAPI
-│  └─ version.py
+│  ├─ main.py                     # Cria a aplicação FastAPI e inclui rotas /v1
+│  ├─ container.py                # Injeta dependências (domain ⇄ infrastructure)
+│  └─ core/
+│     ├─ config.py                # Configurações e variáveis de ambiente (.env)
+│     └─ logging.py
 │
 ├─ domain/
-│  ├─ entities/             # Entidades de negócio (Document)
-│  ├─ repositories/         # Interfaces de repositórios
-│  └─ services/             # Interfaces de serviços (extrator, chunker)
-│
-├─ use_cases/
-│  ├─ ingest_document.py    # Upload e processamento de PDFs
-│  ├─ list_documents.py     # Listagem de documentos
-│  └─ get_document.py       # Detalhamento de documento
-│
-├─ interface_adapters/
-│  ├─ controllers/          # Controladores (camada intermediária)
-│  ├─ dto/                  # Schemas Pydantic para API
-│  └─ web/api/v1/           # Rotas FastAPI (v1)
+│  ├─ entities/                   # Entidades de domínio (ex.: Document)
+│  ├─ repositories/               # Protocols de persistência de documentos
+│  └─ services/                   # Portas (interfaces) para integração
+│     ├─ text_extractor.py
+│     ├─ chunker.py
+│     ├─ chunk_source.py          # Nova interface: fornece chunks de uma origem
+│     └─ vector_store.py          # Nova interface: abstrai o repositório vetorial
 │
 ├─ infrastructure/
-│  ├─ storage/              # Repositório local (filesystem)
-│  ├─ pdf/                  # Extração de texto com pypdf
-│  └─ chunking/             # Chunker simples
+│  ├─ storage/                    # Implementação local dos repositórios
+│  ├─ pdf/                        # Extração de texto de PDFs
+│  ├─ chunking/                   # Lógica de divisão em chunks
+│  ├─ chunk_sources/
+│  │  └─ filesystem_jsonl.py      # Leitor de arquivos .chunks.jsonl
+│  └─ vectorstores/
+│     └─ in_memory.py             # Vector store simples em memória (para testes)
 │
-├─ data/                    # Dados locais
-│  ├─ raw/
-│  ├─ processed/
-│  └─ index/
+├─ use_cases/
+│  ├─ ingest_document.py          # Ingestão completa (upload + parse + chunk)
+│  ├─ list_documents.py           # Listagem de documentos
+│  ├─ get_document.py             # Detalhes do documento
+│  └─ index_document_chunks.py    # NOVO: indexa chunks no vector store
 │
-├─ tests/                   # Testes automatizados (pytest)
-│  ├─ conftest.py           # Limpeza automática dos diretórios
-│  ├─ test_health.py
-│  └─ test_documents.py
+├─ interface_adapters/
+│  ├─ controllers/
+│  │  └─ document_controller.py   # Orquestra os casos de uso
+│  ├─ dto/
+│  │  └─ document_dto.py          # Schemas de resposta
+│  └─ web/api/v1/
+│     ├─ documents.py             # Rotas de documentos (POST/GET)
+│     └─ health.py                # Healthcheck
 │
-├─ .env.example             # Exemplo de configuração
+├─ tests/
+│  ├─ test_documents.py           # Testes de upload/listagem de documentos
+│  ├─ test_health.py              # Teste básico de /v1/healthz
+│  └─ test_index_document_chunks.py  # NOVO: cobre chunk_source + vector_store
+│
+├─ data/                          # Diretório de dados (criado em runtime)
+│
 ├─ requirements.txt
 ├─ pytest.ini
-├─ .pre-commit-config.yaml
+├─ .env.example
 └─ README.md
 ```
 
@@ -64,152 +67,130 @@ rag-fastapi/
 
 ## 🚀 Funcionalidades Atuais
 
-| Endpoint | Método | Descrição |
-|-----------|---------|------------|
-| `/v1/healthz` | GET | Verifica o status da API |
-| `/v1/documents` | POST | Faz upload de um arquivo PDF e processa (texto + chunks) |
-| `/v1/documents` | GET | Lista os documentos processados |
-| `/v1/documents/{doc_id}` | GET | Retorna metadados e caminhos do documento processado |
+### 🧾 Document Upload
+- Endpoint: `POST /v1/documents`
+- Faz upload de um PDF, extrai texto, divide em chunks e salva metadados.
+- Saída:
+  ```json
+  {
+    "meta": {
+      "id": "c19d88e2-499a-4567-8538-bb5a5f82fda4",
+      "filename": "c19d88e2-499a-4567-8538-bb5a5f82fda4__ddd.pdf",
+      "pages": 12,
+      "size_bytes": 571893,
+      "created_at": "2025-10-18T14:40:33Z",
+      "content_type": "application/pdf"
+    },
+    "text_path": "data/processed/c19d88e2-499a-4567-8538-bb5a5f82fda4.txt",
+    "chunks_path": "data/processed/c19d88e2-499a-4567-8538-bb5a5f82fda4.chunks.jsonl",
+    "chunk_count": 2
+  }
+  ```
 
----
+### 🧩 Chunk Source (Filesystem)
+- Novo adapter `FilesystemJsonlChunkSource` lê os chunks `.jsonl` de `data/processed/`.
 
-## 🧩 Tecnologias e Bibliotecas
+### 💾 Vector Store (In-Memory)
+- Novo adapter `InMemoryVectorStore` armazena chunks em memória.
+- Implementa busca por similaridade textual (Jaccard de tokens).
+- Futuramente substituído por **ChromaDB** na camada `infrastructure.vectorstores`.
 
-- **FastAPI** — framework web
-- **pypdf** — leitura e extração de texto de PDFs
-- **httpx** — cliente HTTP assíncrono (testes)
-- **pytest** — testes automatizados
-- **ruff / black / mypy** — qualidade e estilo de código
-- **Clean Architecture** — separação clara de camadas
-- **Pre-commit hooks** — lint, type-check e format automáticos
-
----
-
-## 💻 Como Executar Localmente
-
-### 1️⃣ Clonar o repositório
-```bash
-git clone <seu-repo-url> rag-fastapi
-cd rag-fastapi
-```
-
-### 2️⃣ Criar ambiente virtual
-```bash
-python -m venv .venv
-# Linux/Mac
-source .venv/bin/activate
-# Windows PowerShell
-# .venv\Scripts\Activate.ps1
-```
-
-### 3️⃣ Instalar dependências
-```bash
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-### 4️⃣ Configurar variáveis de ambiente
-```bash
-cp .env.example .env
-```
-
-Você pode ajustar:
-```ini
-APP_PORT=8000
-KEEP_TEST_DATA=0  # Se =1, mantém arquivos criados nos testes
-```
-
-### 5️⃣ Rodar servidor local
-```bash
-uvicorn app.main:app --reload --port 8000
-```
-
-### 6️⃣ Acessar a API
-- Swagger UI → http://127.0.0.1:8000/docs  
-- Healthcheck → http://127.0.0.1:8000/v1/healthz
-
----
-
-## 🧠 Exemplos de Uso
-
-### Upload de PDF
-```bash
-curl -X POST http://127.0.0.1:8000/v1/documents \
-  -F "file=@/caminho/para/arquivo.pdf"
-```
-
-### Listar documentos
-```bash
-curl http://127.0.0.1:8000/v1/documents
-```
-
-### Consultar documento específico
-```bash
-curl http://127.0.0.1:8000/v1/documents/<id>
-```
+### ⚙️ Indexação de Chunks
+- Caso de uso `IndexDocumentChunks` combina as portas:
+  - `ChunkSource` → lê os chunks.
+  - `VectorStore` → indexa ou reindexa.
+- Pode ser facilmente acionado via Controller ou CLI.
 
 ---
 
 ## 🧪 Testes
 
-### Rodar todos os testes
 ```bash
 pytest -q
 ```
 
-### Com saída detalhada
-```bash
-pytest -v
-```
+Cobre:
+- Ingestão de documentos (pipeline principal).
+- Healthcheck.
+- Novo fluxo de indexação (`test_index_document_chunks.py`).
 
-Os testes incluem:
-- Healthcheck funcional
-- Upload, listagem e detalhe de documentos
-- Fixture automática (`conftest.py`) que limpa `data/raw` e `data/processed` antes e depois da execução,  
-  **a menos que `KEEP_TEST_DATA=1` no `.env`**
+Saída esperada:
+```
+...                                                                   [100%]
+3 passed in 1.21s
+```
 
 ---
 
-## 🧰 Qualidade de Código
+## 🧠 Clean Architecture
 
-Formatar e verificar tudo:
-```bash
-black .
-ruff check . --fix
-mypy app
+O projeto mantém o domínio **completamente independente** de frameworks e bibliotecas externas:
+
+```
+[ DOMAIN ]  ←  [ USE CASES ]  ←  [ INFRASTRUCTURE / INTERFACE_ADAPTERS ]
+(entities,     (business         (FastAPI, Chroma, storage, etc.)
+ ports)         logic)
 ```
 
-Instalar pre-commit (opcional, mas recomendado):
-```bash
-pre-commit install
-```
+Assim, substituições como `InMemoryVectorStore` → `ChromaVectorStore` ocorrem sem alterar o domínio.
 
 ---
 
 ## 🧭 Próximos Passos
 
-1. ✅ **Testes de integração** — `/v1/documents` (upload/list/get) usando `ASGITransport` (já implementado).  
-2. ⚙️ **Implementar vector store local (Chroma)** como repositório na camada de infraestrutura, com interface no domínio.  
-3. 💬 **Criar use case `QueryRAG`** e endpoint `/v1/rag/query` (retrieval primeiro, depois geração).  
-4. 🤖 **Definir interface `LLMProvider`** no domínio e implementação local (ex.: Ollama) para completar o “G” do RAG.  
-5. 🧱 **Manter Clean Architecture estrita**, documentação atualizada e README refinado como portfólio FIAP.
+| Etapa | Descrição |
+|-------|------------|
+| ✅ **1.** | Testes de integração `/v1/documents` finalizados |
+| ✅ **2.** | `FilesystemJsonlChunkSource` + `InMemoryVectorStore` criados |
+| 🔜 **3.** | Implementar `ChromaVectorStore` (`infrastructure/vectorstores/chroma_store.py`) |
+| 🔜 **4.** | Criar endpoint `/v1/rag/index/{document_id}` chamando `IndexDocumentChunks` |
+| 🔜 **5.** | Adicionar `QueryRAG` (retrieval + LLM) |
+| 🔜 **6.** | Documentar exemplos de queries RAG e integração com LLM Provider |
 
 ---
 
-## 🏗️ Arquitetura (Clean Architecture)
+## 🧰 Execução Local
 
+### Ambiente
+```bash
+cp .env.example .env
 ```
-[FastAPI Routers] ─► [Controllers / DTOs] ─► [Use Cases] ─► [Domain Entities & Interfaces] ◄── [Infrastructure Impl]
+Configure os diretórios de dados (padrão):
+```
+DATA_DIR=./data
+RAW_DIR=./data/raw
+PROCESSED_DIR=./data/processed
+INDEX_DIR=./data/index
 ```
 
-- Fluxo de dependência **sempre para dentro**
-- Camadas externas podem mudar sem afetar as internas
-- Ideal para trocar componentes (LLM, vetor store, storage) com mínimo impacto
+### Rodar servidor
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+
+### Testar API
+- `POST /v1/documents` — upload PDF  
+- `GET /v1/documents` — lista  
+- `GET /v1/documents/{id}` — detalhes  
+- `GET /v1/healthz` — status
 
 ---
 
-## 🪪 Autor
+## 🧩 Tecnologias
 
-**Raymundo Neto**    
-📧 Contato profissional: *raymundocneto@gmail.com*  
-💼 Portfólio: *[LinkedIn](https://www.linkedin.com/in/raymundo-neto-61933427/)*  
+| Categoria | Stack |
+|------------|-------|
+| Framework | FastAPI |
+| Testes | pytest + httpx |
+| Arquitetura | Clean Architecture (Domain-Driven Design simplificado) |
+| Extração de texto | PyPDF |
+| Armazenamento local | FileSystem |
+| Vector Store (fase 1) | InMemory |
+| Próxima Etapa | ChromaDB + QueryRAG |
+
+---
+
+## 📜 Licença
+
+MIT © 2025  
+Projeto acadêmico com fins de estudo.
