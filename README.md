@@ -26,9 +26,7 @@ rag-fastapi/
 │   ├── web/api/v1/                # Rotas HTTP organizadas por módulo
 │   └── controllers/               # Controladores (camada intermediária)
 ├── tests/
-│   └── test_rag_query.py          # Teste de integração do endpoint /v1/rag/query
-└── postman/
-    └── RAG-FastAPI.postman_collection.json
+    └── test_rag_query.py          # Teste de integração do endpoint /v1/rag/query
 ```
 
 ---
