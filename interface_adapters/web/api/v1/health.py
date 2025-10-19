@@ -5,6 +5,6 @@ from app.version import APP_NAME, APP_VERSION
 router = APIRouter(tags=["health"])
 
 
-@router.get("/healthz")
+@router.get("/health")
 def healthcheck():
     return {"status": "ok", "name": APP_NAME, "version": APP_VERSION}
