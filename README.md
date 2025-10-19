@@ -41,7 +41,7 @@ rag-fastapi/
 - Suporte a diferentes provedores de embeddings via contrato `VectorStore`.
 
 ### ✅ Healthcheck
-- `/v1/health` e `/v1/healthz` para verificação de status e versão.
+- `/v1/health` para verificação de status e versão.
 
 ### ✅ Testes
 - Suíte `pytest` completa e passando: ingestão, listagem, query e integração com Chroma.
