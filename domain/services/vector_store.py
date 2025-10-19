@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Optional, Tuple
@@ -10,6 +11,7 @@ class Chunk:
     Unidade mínima de recuperação no RAG.
     Mantemos no domínio para não depender de entidade de infraestrutura.
     """
+
     document_id: str
     content: str
     chunk_id: Optional[str] = None

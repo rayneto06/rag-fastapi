@@ -3,9 +3,10 @@ from __future__ import annotations
 import json
 import shutil
 import uuid
-from pathlib import Path
-from typing import Iterable, Optional, Dict, Any, List
 from dataclasses import asdict
+from datetime import datetime
+from pathlib import Path
+from typing import Iterable, Optional
 
 from app.core.config import settings
 from domain.entities.document import Document
@@ -97,7 +98,8 @@ class LocalDocumentRepository(DocumentRepository):
         return c
 
     @staticmethod
-    def _parse_dt(s: str):
+    def _parse_dt(s: str) -> datetime:
         # datetime.fromisoformat cobre o mais comum
         from datetime import datetime
+
         return datetime.fromisoformat(s)

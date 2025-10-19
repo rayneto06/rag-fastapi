@@ -1,8 +1,9 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
-from domain.services.vector_store import VectorStore, Chunk
+from domain.services.vector_store import Chunk, VectorStore
 
 
 @dataclass(frozen=True)
@@ -10,6 +11,7 @@ class QueryRAGInput:
     """
     Entrada do caso de uso de consulta RAG (apenas recuperação por enquanto).
     """
+
     question: str
     top_k: int = 5
 
@@ -19,6 +21,7 @@ class RetrievedChunk:
     """
     Saída normalizada para a aplicação/web sem expor implementações de infraestrutura.
     """
+
     score: float
     document_id: str
     content: str
@@ -31,6 +34,7 @@ class QueryRAGOutput:
     """
     Resultado da consulta: lista de chunks recuperados.
     """
+
     hits: List[RetrievedChunk]
 
 

@@ -1,20 +1,22 @@
 from __future__ import annotations
-from typing import Iterable, List, Tuple, Any, Dict
+
 from pathlib import Path
+from typing import Any, Dict, Iterable, List, Tuple
 
 import chromadb
 from chromadb.api.models.Collection import Collection
 from chromadb.utils import embedding_functions
 
-from domain.services.vector_store import VectorStore, Chunk
+from domain.services.vector_store import Chunk, VectorStore
 
 
 class _HashingEmbeddingFunction(embedding_functions.EmbeddingFunction):
     """Embedding determinística, local e rápida para testes offline."""
+
     def __init__(self, dim: int = 256) -> None:
         self.dim = int(dim)
 
-    def __call__(self, input: List[str]) -> List[List[float]]:  # type: ignore[override]
+    def __call__(self, input: List[str]) -> List[List[float]]:
         return [self._embed(x) for x in input]
 
     def _embed(self, text: str) -> List[float]:
@@ -61,7 +63,16 @@ class ChromaVectorStore(VectorStore):
         if not ids:
             return 0
 
-        self._collection.upsert(ids=ids, documents=documents, metadatas=metadatas)
+        # Ajuste de tipagem: converte para lista de Mapping[str, Any]
+        from typing import Mapping
+
+        metadatas_list: list[Mapping[str, Any]] = [m for m in metadatas]
+        self._collection.upsert(
+            ids=ids,
+            documents=documents,
+            metadatas=metadatas_list,
+        )
+
         return len(ids)
 
     def similarity_search(self, query: str, top_k: int = 5) -> List[Tuple[float, Chunk]]:
@@ -69,10 +80,12 @@ class ChromaVectorStore(VectorStore):
         if not query.strip():
             return []
 
+        # Conversão explícita para tipos aceitos pelo SDK
+        include_fields: List[Any] = ["documents", "metadatas", "distances"]
         res = self._collection.query(
             query_texts=[query],
             n_results=top_k,
-            include=["documents", "metadatas", "distances"],
+            include=include_fields,
         )
         docs = (res.get("documents") or [[]])[0]
         metas = (res.get("metadatas") or [[]])[0]
@@ -85,15 +98,21 @@ class ChromaVectorStore(VectorStore):
             except Exception:
                 d = 0.0
             score = 1.0 / (1.0 + max(0.0, d))
-            results.append((
-                score,
-                Chunk(
-                    document_id=str(meta.get("document_id", "")),
-                    content=str(doc),
-                    chunk_id=str(meta.get("chunk_id")) if meta.get("chunk_id") is not None else None,
-                    metadata={k: v for k, v in meta.items() if k not in ("document_id", "chunk_id")},
-                ),
-            ))
+            results.append(
+                (
+                    score,
+                    Chunk(
+                        document_id=str(meta.get("document_id", "")),
+                        content=str(doc),
+                        chunk_id=(
+                            str(meta.get("chunk_id")) if meta.get("chunk_id") is not None else None
+                        ),
+                        metadata={
+                            k: v for k, v in meta.items() if k not in ("document_id", "chunk_id")
+                        },
+                    ),
+                )
+            )
 
         results.sort(key=lambda t: t[0], reverse=True)
         return results

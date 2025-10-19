@@ -5,16 +5,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, status
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
 
 from app.container import Container
+from domain.services.vector_store import Chunk as VSChunk
 from interface_adapters.controllers.document_controller import DocumentController
 from interface_adapters.dto.document_dto import (
-    DocumentMetaDTO,
-    DocumentListItemDTO,
     DocumentDetailDTO,
+    DocumentListItemDTO,
+    DocumentMetaDTO,
 )
-from domain.services.vector_store import Chunk as VSChunk
+from use_cases.get_document import GetDocument
+from use_cases.ingest_document import IngestDocument
+from use_cases.list_documents import ListDocuments
 
 
 def get_router(container: Container) -> APIRouter:
@@ -26,9 +29,12 @@ def get_router(container: Container) -> APIRouter:
         get_uc=__build_get_uc(container),
     )
 
-    @router.post("/documents", response_model=DocumentDetailDTO, status_code=status.HTTP_201_CREATED)
-    async def upload_document(file: UploadFile = File(...)):
-        if not file.filename.lower().endswith(".pdf"):
+    @router.post(
+        "/documents", response_model=DocumentDetailDTO, status_code=status.HTTP_201_CREATED
+    )
+    async def upload_document(file: UploadFile = File(...)) -> DocumentDetailDTO:
+        # filename pode ser None; valide antes de usar .lower()
+        if not file.filename or not file.filename.lower().endswith(".pdf"):
             raise HTTPException(status_code=400, detail="Apenas arquivos PDF são aceitos.")
 
         # salva upload temporário (no diretório RAW do repo)
@@ -40,7 +46,7 @@ def get_router(container: Container) -> APIRouter:
         # 1) Ingest (usa o caso de uso existente: salva raw/text/chunks/meta)
         result = controller.ingest(
             tmp_file=tmp,
-            original_filename=file.filename,
+            original_filename=file.filename or "unknown.pdf",
             content_type=file.content_type or "application/pdf",
         )
 
@@ -54,13 +60,13 @@ def get_router(container: Container) -> APIRouter:
                     content = (data.get("content") or "").strip()
                     if not content:
                         continue
-                    meta = {k: v for k, v in data.items() if k != "content"}
+                    chunk_meta = {k: v for k, v in data.items() if k != "content"}
                     vs_chunks.append(
                         VSChunk(
                             document_id=result.document.id,
                             content=content,
                             chunk_id=f"{result.document.id}:{i}",
-                            metadata=meta,
+                            metadata=chunk_meta,
                         )
                     )
             if vs_chunks:
@@ -69,7 +75,7 @@ def get_router(container: Container) -> APIRouter:
             raise HTTPException(status_code=500, detail=f"Falha ao indexar chunks: {e}") from e
 
         # 3) Resposta compatível com os testes e com o contrato atual
-        meta = DocumentMetaDTO(
+        meta: DocumentMetaDTO = DocumentMetaDTO(
             id=result.document.id,
             filename=result.document.stored_filename,
             original_filename=result.document.original_filename,
@@ -86,7 +92,7 @@ def get_router(container: Container) -> APIRouter:
         )
 
     @router.get("/documents", response_model=List[DocumentListItemDTO])
-    def list_documents():
+    def list_documents() -> List[DocumentListItemDTO]:
         result = controller.list()
         return [
             DocumentListItemDTO(
@@ -100,7 +106,7 @@ def get_router(container: Container) -> APIRouter:
         ]
 
     @router.get("/documents/{doc_id}", response_model=DocumentDetailDTO)
-    def get_document(doc_id: str):
+    def get_document(doc_id: str) -> DocumentDetailDTO:
         result = controller.get(doc_id)
         if not result:
             raise HTTPException(status_code=404, detail="Documento não encontrado.")
@@ -123,9 +129,7 @@ def get_router(container: Container) -> APIRouter:
     return router
 
 
-# wiring dos use cases (mantém a FastAPI “fina”)
-def __build_ingest_uc(container: Container):
-    from use_cases.ingest_document import IngestDocument
+def __build_ingest_uc(container: Container) -> IngestDocument:
     return IngestDocument(
         repo=container.document_repository,
         extractor=container.text_extractor,
@@ -133,11 +137,9 @@ def __build_ingest_uc(container: Container):
     )
 
 
-def __build_list_uc(container: Container):
-    from use_cases.list_documents import ListDocuments
+def __build_list_uc(container: Container) -> ListDocuments:
     return ListDocuments(repo=container.document_repository)
 
 
-def __build_get_uc(container: Container):
-    from use_cases.get_document import GetDocument
+def __build_get_uc(container: Container) -> GetDocument:
     return GetDocument(repo=container.document_repository)

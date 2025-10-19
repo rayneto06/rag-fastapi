@@ -1,13 +1,16 @@
 from __future__ import annotations
+
 import shutil
-import pytest
 from pathlib import Path
+from typing import Iterator
+
+import pytest
 
 from app.core.config import settings
 
 
 @pytest.fixture(autouse=True, scope="session")
-def clean_data_dirs():
+def clean_data_dirs() -> Iterator[None]:
     """
     Limpa as pastas de dados antes e depois dos testes,
     exceto se KEEP_TEST_DATA=1 no .env.
@@ -22,7 +25,7 @@ def clean_data_dirs():
     _clear_all()
 
 
-def _clear_all():
+def _clear_all() -> None:
     for folder in (settings.RAW_DIR, settings.PROCESSED_DIR, settings.INDEX_DIR):
         _clear_dir(folder)
 

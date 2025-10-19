@@ -1,15 +1,15 @@
 from __future__ import annotations
+
 import io
-import json
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 from fastapi import status
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 from pypdf import PdfWriter
 
 from app.main import app
-from app.core.config import settings
 
 
 def _make_minimal_pdf_bytes() -> bytes:
@@ -22,7 +22,7 @@ def _make_minimal_pdf_bytes() -> bytes:
 
 
 @pytest.mark.asyncio
-async def test_upload_document_ok(tmp_path: Path):
+async def test_upload_document_ok(tmp_path: Path) -> None:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         pdf_bytes = _make_minimal_pdf_bytes()
@@ -36,13 +36,13 @@ async def test_upload_document_ok(tmp_path: Path):
     assert body["meta"]["pages"] >= 1
     assert body["meta"]["filename"].endswith(".pdf")
     # guarda para os próximos testes
-    test_upload_document_ok.doc_id = body["meta"]["id"]  # type: ignore[attr-defined]
+    cast(Any, test_upload_document_ok).doc_id = body["meta"]["id"]
 
 
 @pytest.mark.asyncio
-async def test_list_documents_contains_uploaded():
+async def test_list_documents_contains_uploaded() -> None:
     # garante que o teste anterior rodou e gerou um id
-    doc_id = getattr(test_upload_document_ok, "doc_id", None)  # type: ignore[attr-defined]
+    doc_id = getattr(cast(Any, test_upload_document_ok), "doc_id", None)
     assert doc_id is not None, "O teste de upload deve rodar antes deste."
 
     transport = ASGITransport(app=app)
@@ -56,8 +56,8 @@ async def test_list_documents_contains_uploaded():
 
 
 @pytest.mark.asyncio
-async def test_get_document_by_id_ok():
-    doc_id = getattr(test_upload_document_ok, "doc_id", None)  # type: ignore[attr-defined]
+async def test_get_document_by_id_ok() -> None:
+    doc_id = getattr(cast(Any, test_upload_document_ok), "doc_id", None)
     assert doc_id is not None, "O teste de upload deve rodar antes deste."
 
     transport = ASGITransport(app=app)

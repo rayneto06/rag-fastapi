@@ -1,12 +1,14 @@
 from __future__ import annotations
+
 import pytest
 from fastapi import status
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
+
 from app.main import app
 
 
 @pytest.mark.asyncio
-async def test_healthcheck():
+async def test_healthcheck() -> None:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         resp = await ac.get("/v1/health")

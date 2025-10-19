@@ -1,7 +1,7 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -16,4 +16,6 @@ class Document:
 
     @property
     def is_pdf(self) -> bool:
-        return self.content_type == "application/pdf" or self.stored_filename.lower().endswith(".pdf")
+        return self.content_type == "application/pdf" or self.stored_filename.lower().endswith(
+            ".pdf"
+        )

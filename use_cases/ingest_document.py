@@ -1,12 +1,13 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
 from domain.entities.document import Document
 from domain.repositories.document_repository import DocumentRepository
-from domain.services.text_extractor import TextExtractor
 from domain.services.chunker import Chunker
+from domain.services.text_extractor import TextExtractor
 
 
 @dataclass(frozen=True)
@@ -25,7 +26,9 @@ class IngestDocumentOutput:
 
 
 class IngestDocument:
-    def __init__(self, repo: DocumentRepository, extractor: TextExtractor, chunker: Chunker) -> None:
+    def __init__(
+        self, repo: DocumentRepository, extractor: TextExtractor, chunker: Chunker
+    ) -> None:
         self.repo = repo
         self.extractor = extractor
         self.chunker = chunker

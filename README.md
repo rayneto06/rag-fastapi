@@ -85,7 +85,7 @@ uvicorn app.main:app --reload
 pytest -q
 ```
 
-A API ficará disponível em `http://127.0.0.1:8000`  
+A API ficará disponível em `http://127.0.0.1:8000`
 A documentação interativa (Swagger) está em `http://127.0.0.1:8000/docs`
 
 ---

@@ -1,0 +1,8 @@
+# Ferramentas de desenvolvimento
+black==24.8.0
+ruff==0.6.9
+mypy==1.11.2
+
+# Stubs úteis
+types-requests==2.32.0.20241016
+types-PyYAML==6.0.12.20240917

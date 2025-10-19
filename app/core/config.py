@@ -57,8 +57,8 @@ class Settings(BaseSettings):
     KEEP_TEST_DATA: bool = False
 
     # ---- Vector Store Provider ----
-    VECTOR_STORE_PROVIDER: str = "inmemory"   # 'inmemory' | 'chroma'
-    CHROMA_DIR: Path = Path(".chroma")        # diretório de persistência do Chroma
+    VECTOR_STORE_PROVIDER: str = "inmemory"  # 'inmemory' | 'chroma'
+    CHROMA_DIR: Path = Path(".chroma")  # diretório de persistência do Chroma
     CHROMA_COLLECTION: str = "rag_chunks"
 
     model_config = SettingsConfigDict(
@@ -69,7 +69,7 @@ class Settings(BaseSettings):
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
-    def _val_cors_origins(cls, v):
+    def _val_cors_origins(cls, v: str | list[str]) -> list[str] | str:
         return _parse_origins(v)
 
     def ensure_dirs(self) -> None:

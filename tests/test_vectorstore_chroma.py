@@ -1,10 +1,8 @@
-import os
 from pathlib import Path
 
 import pytest
 
 from domain.services.vector_store import Chunk
-from infrastructure.vectorstores.in_memory import InMemoryVectorStore
 
 # Importa condicionalmente para não falhar quando chroma não estiver instalado localmente
 try:
@@ -16,15 +14,25 @@ except Exception:
 pytestmark = pytest.mark.skipif(ChromaVectorStore is None, reason="chromadb não instalado")
 
 
-def _make_chunks(doc_id: str):
+def _make_chunks(doc_id: str) -> list[Chunk]:
     return [
-        Chunk(document_id=doc_id, content="FastAPI e RAG com chunks em disco", chunk_id=f"{doc_id}:0"),
-        Chunk(document_id=doc_id, content="Vector Store persistente usando Chroma local", chunk_id=f"{doc_id}:1"),
-        Chunk(document_id=doc_id, content="Testes devem validar persistência e deleção", chunk_id=f"{doc_id}:2"),
+        Chunk(
+            document_id=doc_id, content="FastAPI e RAG com chunks em disco", chunk_id=f"{doc_id}:0"
+        ),
+        Chunk(
+            document_id=doc_id,
+            content="Vector Store persistente usando Chroma local",
+            chunk_id=f"{doc_id}:1",
+        ),
+        Chunk(
+            document_id=doc_id,
+            content="Testes devem validar persistência e deleção",
+            chunk_id=f"{doc_id}:2",
+        ),
     ]
 
 
-def test_chroma_persiste_e_busca_apos_reiniciar(tmp_path: Path):
+def test_chroma_persiste_e_busca_apos_reiniciar(tmp_path: Path) -> None:
     chroma_dir = tmp_path / ".chroma"
     store = ChromaVectorStore(persist_directory=chroma_dir, collection_name="test_chunks")
 
@@ -40,7 +48,7 @@ def test_chroma_persiste_e_busca_apos_reiniciar(tmp_path: Path):
     assert "doc-1" in top_doc_ids
 
 
-def test_chroma_delete_by_document_remove_todos(tmp_path: Path):
+def test_chroma_delete_by_document_remove_todos(tmp_path: Path) -> None:
     chroma_dir = tmp_path / ".chroma"
     store = ChromaVectorStore(persist_directory=chroma_dir, collection_name="test_chunks")
 

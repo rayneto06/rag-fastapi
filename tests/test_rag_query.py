@@ -1,28 +1,34 @@
 import pytest
-from httpx import AsyncClient
-from httpx import ASGITransport
+from httpx import ASGITransport, AsyncClient
 
+from app.container import Container, build_container
 from app.main import create_app
-from app.container import build_container, Container
 from domain.services.vector_store import Chunk
 from infrastructure.vectorstores.in_memory import InMemoryVectorStore
 
 
 @pytest.mark.asyncio
-async def test_rag_query_returns_hits_ordered_by_score():
+async def test_rag_query_returns_hits_ordered_by_score() -> None:
     # Arrange: cria um container e injeta um VectorStore populado
     base_container: Container = build_container()
     store = InMemoryVectorStore()
 
     # Adiciona dois documentos/chunks simples
-    store.add([
-        Chunk(document_id="doc-1", content="FastAPI RAG com arquitetura limpa e testes de integração."),
-        Chunk(document_id="doc-1", content="Indexação de chunks e busca de similaridade."),
-    ])
-    store.add([
-        Chunk(document_id="doc-2", content="Odontologia hospitalar e protocolos clínicos."),
-        Chunk(document_id="doc-2", content="Scores BOE e avaliação de higiene oral em UTI."),
-    ])
+    store.add(
+        [
+            Chunk(
+                document_id="doc-1",
+                content="FastAPI RAG com arquitetura limpa e testes de integração.",
+            ),
+            Chunk(document_id="doc-1", content="Indexação de chunks e busca de similaridade."),
+        ]
+    )
+    store.add(
+        [
+            Chunk(document_id="doc-2", content="Odontologia hospitalar e protocolos clínicos."),
+            Chunk(document_id="doc-2", content="Scores BOE e avaliação de higiene oral em UTI."),
+        ]
+    )
 
     # Substitui apenas o vector_store do container padrão
     base_container.vector_store = store
@@ -48,7 +54,7 @@ async def test_rag_query_returns_hits_ordered_by_score():
 
 
 @pytest.mark.asyncio
-async def test_rag_query_empty_question_returns_empty_list():
+async def test_rag_query_empty_question_returns_empty_list() -> None:
     base_container: Container = build_container()
     app = create_app(container=base_container)
     transport = ASGITransport(app=app)

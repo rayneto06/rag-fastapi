@@ -1,6 +1,7 @@
 from __future__ import annotations
-from typing import Protocol, Tuple
+
 from pathlib import Path
+from typing import Protocol, Tuple
 
 
 class TextExtractor(Protocol):

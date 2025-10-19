@@ -1,7 +1,8 @@
 from __future__ import annotations
-from pathlib import Path
-from typing import Iterable, Iterator, Dict, Any
+
 import json
+from pathlib import Path
+from typing import Any, Dict, Iterable, Iterator
 
 from domain.services.chunk_source import ChunkSource
 from domain.services.vector_store import Chunk

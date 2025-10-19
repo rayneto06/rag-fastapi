@@ -1,8 +1,9 @@
 from __future__ import annotations
-from typing import Dict, Iterable, List, Tuple
-from collections import defaultdict
 
-from domain.services.vector_store import VectorStore, Chunk
+from collections import defaultdict
+from typing import Dict, Iterable, List, Tuple
+
+from domain.services.vector_store import Chunk, VectorStore
 
 
 class InMemoryVectorStore(VectorStore):

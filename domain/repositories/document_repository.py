@@ -1,10 +1,14 @@
 from __future__ import annotations
-from typing import Protocol, Iterable, Optional
+
 from pathlib import Path
+from typing import Iterable, Mapping, Optional, Protocol
+
 from domain.entities.document import Document
 
 
 class DocumentRepository(Protocol):
+    paths: Mapping[str, Path]
+
     def allocate_paths(self, original_filename: str) -> dict:
         """Retorna dict com paths e id gerado: {id, raw_path, text_path, chunks_path, meta_path}."""
         ...

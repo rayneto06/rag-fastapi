@@ -15,7 +15,7 @@ def _write_jsonl(dirpath: Path, document_id: str, rows: list[dict]) -> Path:
     return fp
 
 
-def test_index_document_chunks_happy_path(tmp_path: Path):
+def test_index_document_chunks_happy_path(tmp_path: Path) -> None:
     doc_id = "doc-123"
     processed_dir = tmp_path / "data" / "processed"
     _write_jsonl(
@@ -47,7 +47,7 @@ def test_index_document_chunks_happy_path(tmp_path: Path):
     assert result2.added == 2
 
 
-def test_index_document_chunks_empty_source(tmp_path: Path):
+def test_index_document_chunks_empty_source(tmp_path: Path) -> None:
     doc_id = "doc-vazio"
     processed_dir = tmp_path / "data" / "processed"
     processed_dir.mkdir(parents=True, exist_ok=True)

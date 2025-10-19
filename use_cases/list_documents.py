@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import List
+
 from domain.entities.document import Document
 from domain.repositories.document_repository import DocumentRepository
 

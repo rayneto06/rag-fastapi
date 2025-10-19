@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import Iterable, List, Dict
+
+from typing import Any, Dict, Iterator, List
 
 from domain.services.chunker import Chunker
 
@@ -13,14 +14,16 @@ class SimpleChunker(Chunker):
         blocks = [b.strip() for b in text.split("\n\n") if b.strip()]
         return blocks if blocks else [text]
 
-    def chunk(self, text: str) -> Iterable[Dict]:
+    def chunk(self, text: str) -> Iterator[Dict[str, Any]]:
         if not text.strip():
-            return []
+            return
+
         paras = self._split_paragraphs(text)
         words: List[str] = []
         for p in paras:
             words.extend(p.split())
             words.append("\n\n")
+
         if words and words[-1] == "\n\n":
             words = words[:-1]
 
