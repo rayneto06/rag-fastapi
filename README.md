@@ -1,112 +1,100 @@
-# 🧠 RAG FastAPI
+# RAG FastAPI
 
-API modular para experimentos com **Retrieval-Augmented Generation (RAG)** usando **FastAPI** e **Clean Architecture**.
-
-Este projeto faz parte de um estudo de arquitetura de software e IA generativa, com foco em separação clara de camadas e testabilidade.
+Projeto de **Retrieval-Augmented Generation (RAG)** com arquitetura limpa e modular, desenvolvido em **FastAPI**.
 
 ---
 
-## 🚀 Estrutura do projeto
+## 🧱 Estrutura e objetivos
+
+Este serviço fornece a base de um microserviço de RAG voltado à ingestão de documentos, armazenamento de embeddings e consultas semânticas.
+
+A arquitetura segue **Clean Architecture** e isola completamente as dependências de infraestrutura — permitindo alternar entre diferentes repositórios ou provedores de embeddings sem impactar o domínio.
 
 ```
 rag-fastapi/
-├── app/
-│   ├── main.py                    # Inicialização da API FastAPI
-│   ├── container.py               # Injeção de dependências (Clean Architecture)
-│   └── core/                      # Configurações globais
-├── domain/
-│   ├── services/                  # Portas (interfaces) como VectorStore, Chunker, etc.
-│   └── use_cases/                 # Casos de uso independentes de infraestrutura
-├── infrastructure/
-│   ├── vectorstores/in_memory.py  # Vector Store inicial (in-memory)
-│   ├── pdf/                       # Extração de texto
-│   ├── chunking/                  # Divisão em chunks
-│   └── storage/                   # Repositório local de documentos
-├── interface_adapters/
-│   ├── web/api/v1/                # Rotas HTTP organizadas por módulo
-│   └── controllers/               # Controladores (camada intermediária)
-├── tests/
-    └── test_rag_query.py          # Teste de integração do endpoint /v1/rag/query
+├── app/                     # Inicialização, container e configuração
+├── domain/                  # Entidades e interfaces puras
+├── use_cases/               # Casos de uso independentes
+├── infrastructure/           # Implementações concretas (PDF, Chroma, storage, etc.)
+├── interface_adapters/      # Controllers e rotas FastAPI
+└── tests/                   # Testes unitários e de integração
 ```
 
 ---
 
-## 🧬 Funcionalidades atuais
+## ⚙️ Funcionalidades atuais
 
-| Funcionalidade                   | Descrição                                       | Status         |
-| -------------------------------- | ----------------------------------------------- | -------------- |
-| Upload de documentos PDF         | Faz upload e armazena metadados                 | ✅              |
-| Listagem e detalhe de documentos | `/v1/documents`, `/v1/documents/{id}`           | ✅              |
-| Healthcheck                      | `/v1/health`                                    | ✅              |
-| **Consulta RAG (retrieval)**     | `/v1/rag/query` — retorna chunks mais similares | ✅              |
-| Vector Store In-Memory           | Implementação inicial (sem persistência)        | ✅              |
-| Indexação automática             | Ainda não implementada                          | ⏳ Próxima fase |
+### ✅ Documentos
+- Upload de PDFs com extração de texto e chunking automático.
+- Salvamento de artefatos (texto e chunks) em disco.
+- Indexação automática dos chunks no **Vector Store** configurado (`InMemory` ou **Chroma**).
+- Listagem e obtenção de metadados de documentos.
+
+### ✅ Vector Store
+- Implementações:
+  - `InMemoryVectorStore`: volátil, ideal para testes e CI.
+  - `ChromaVectorStore`: persistente e local, usando `chromadb`.
+- Indexação e busca por similaridade (L2 → escore invertido em 1/(1+d)).
+
+### ✅ RAG (Retrieval-Only por enquanto)
+- Endpoint `/v1/rag/query` para consulta de relevância textual com `top_k` ajustável.
+- Suporte a diferentes provedores de embeddings via contrato `VectorStore`.
+
+### ✅ Healthcheck
+- `/v1/health` e `/v1/healthz` para verificação de status e versão.
+
+### ✅ Testes
+- Suíte `pytest` completa e passando: ingestão, listagem, query e integração com Chroma.
+
+### ✅ Postman
+- Coleção e ambiente prontos (`RAG_FastAPI.postman_collection.json` e `RAG_FastAPI.postman_environment.json`)
+  - Upload → List → Get → Query já configurados.
 
 ---
 
-## ⚙️ Como rodar localmente
-
-### 1️⃣ Instalar dependências
+## 🧩 Configuração via `.env`
 
 ```bash
+APP_PORT=8000
+APP_ENV=local
+
+CORS_ORIGINS=["http://localhost:3000","http://127.0.0.1:3000"]
+VECTOR_STORE_PROVIDER=chroma      # ou inmemory
+CHROMA_DIR=.chroma
+CHROMA_COLLECTION=rag_chunks
+DATA_DIR=./data
+RAW_DIR=./data/raw
+PROCESSED_DIR=./data/processed
+INDEX_DIR=./data/index
+KEEP_TEST_DATA=0
+ANONYMIZED_TELEMETRY=FALSE
+```
+
+---
+
+## 🚀 Executar localmente
+
+```bash
+# Instalar dependências
 pip install -r requirements.txt
-```
 
-### 2️⃣ Rodar testes
-
-```bash
-pytest -q
-```
-
-### 3️⃣ Rodar servidor local
-
-```bash
+# Executar API
 uvicorn app.main:app --reload
-```
 
-### 4️⃣ Endpoints principais
-
-| Método | Endpoint             | Descrição                   |
-| ------ | -------------------- | --------------------------- |
-| GET    | `/v1/health`         | Healthcheck                 |
-| POST   | `/v1/documents`      | Upload de documento PDF     |
-| GET    | `/v1/documents`      | Listar documentos           |
-| GET    | `/v1/documents/{id}` | Obter detalhes do documento |
-| POST   | `/v1/rag/query`      | Consulta RAG (retrieval)    |
-
----
-
-## 🥪 Testes
-
-Os testes usam `pytest` com `pytest-asyncio` e `httpx.AsyncClient` via `ASGITransport`.
-
-```bash
+# Rodar testes
 pytest -q
 ```
 
-Saída esperada:
-
-```
-10 passed in X.XXs
-```
+A API ficará disponível em `http://127.0.0.1:8000`  
+A documentação interativa (Swagger) está em `http://127.0.0.1:8000/docs`
 
 ---
 
-## 🤀 Próximos passos planejados
+## 🔮 Próximo passo
 
-1. **Implementar Vector Store persistente (Chroma)**
-
-   * Substituir o InMemoryVectorStore por uma versão local persistente.
-2. **Adicionar caso de uso e endpoint de indexação de chunks**
-
-   * Populando o Vector Store a partir dos `.jsonl` gerados.
-3. **Integração com LLMProvider (Ollama ou local)**
-
-   * Completar o “G” do RAG.
-4. **Documentação e scripts de inicialização automatizados.**
-
----
-
-## 🗞️ Licença
-
-MIT License
+### 🧠 Fase seguinte: **LLMProvider e geração de respostas**
+Implementar o caso de uso `QueryRAG` completo, com:
+1. **Interface `LLMProvider` no domínio** para abstrair qualquer modelo de linguagem.
+2. **Implementação local (ex: OllamaProvider)** para geração baseada no contexto recuperado.
+3. **Integração no endpoint `/v1/rag/query`**: combinar *retrieval + geração*.
+4. **Testes de integração** com mocks determinísticos para o LLM.
