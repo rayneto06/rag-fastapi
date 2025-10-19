@@ -1,23 +1,48 @@
-# Python
+# --- Python / Build / Cache ---
 __pycache__/
 *.py[cod]
+*.so
+*.pyd
+*.pyo
 *.egg-info/
 .eggs/
-dist/
 build/
-.venv/
-.env
+dist/
+*.log
 
-# IDE
+# --- Envs / Tools ---
+.venv/
+env/
+venv/
+.pyenv/
+.mypy_cache/
+.pytype/
+.pyre/
+.cache/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# --- IDE / OS ---
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
 
-# dados locais
-data/raw/*
-data/processed/*
-data/index/*
+# --- App settings ---
+.env
+.env.*
+!.env.example
 
-# manter placeholders
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-!data/index/.gitkeep
+# --- RAG FastAPI: artefatos locais ---
+# Vector store local (Chroma)
+.chroma/
+
+# Dados de ingestão/artefatos processados
+data/**
+!data/**/.gitkeep
+
+# Saídas temporárias de testes (se usadas)
+tmp/
+tmp_*/
