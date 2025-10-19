@@ -3,13 +3,12 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import List
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-def _parse_origins(value: object) -> List[str]:
+def _parse_origins(value: object) -> list[str]:
     """
     Aceita:
     - JSON string: '["http://a","http://b"]'
@@ -45,7 +44,7 @@ class Settings(BaseSettings):
 
     # ---- CORS ----
     CORS_ENABLED: bool = True
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
     # ---- Dados locais ----
     DATA_DIR: Path = Path("data")

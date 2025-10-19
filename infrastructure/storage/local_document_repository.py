@@ -3,10 +3,10 @@ from __future__ import annotations
 import json
 import shutil
 import uuid
+from collections.abc import Iterable
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable, Optional
 
 from app.core.config import settings
 from domain.entities.document import Document
@@ -60,7 +60,7 @@ class LocalDocumentRepository(DocumentRepository):
         meta["created_at"] = doc.created_at.isoformat()
         meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    def _load_meta_file(self, meta_path: Path) -> Optional[Document]:
+    def _load_meta_file(self, meta_path: Path) -> Document | None:
         if not meta_path.exists():
             return None
         data = json.loads(meta_path.read_text(encoding="utf-8"))
@@ -83,7 +83,7 @@ class LocalDocumentRepository(DocumentRepository):
             if doc:
                 yield doc
 
-    def get_document(self, doc_id: str) -> Optional[Document]:
+    def get_document(self, doc_id: str) -> Document | None:
         meta_path = settings.PROCESSED_DIR / f"{doc_id}.meta.json"
         return self._load_meta_file(meta_path)
 

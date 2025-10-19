@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -14,8 +15,8 @@ class Chunk:
 
     document_id: str
     content: str
-    chunk_id: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    chunk_id: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class VectorStore(ABC):
@@ -33,7 +34,7 @@ class VectorStore(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def similarity_search(self, query: str, top_k: int = 5) -> List[Tuple[float, Chunk]]:
+    def similarity_search(self, query: str, top_k: int = 5) -> list[tuple[float, Chunk]]:
         """
         Busca semântica aproximada.
         Retorna lista de (score_normalizado_0_1, chunk), ordenada desc.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Iterator, List
+from collections.abc import Iterator
+from typing import Any
 
 from domain.services.chunker import Chunker
 
@@ -10,16 +11,16 @@ class SimpleChunker(Chunker):
         self.max_tokens = max_tokens
         self.overlap_tokens = overlap_tokens
 
-    def _split_paragraphs(self, text: str) -> List[str]:
+    def _split_paragraphs(self, text: str) -> list[str]:
         blocks = [b.strip() for b in text.split("\n\n") if b.strip()]
         return blocks if blocks else [text]
 
-    def chunk(self, text: str) -> Iterator[Dict[str, Any]]:
+    def chunk(self, text: str) -> Iterator[dict[str, Any]]:
         if not text.strip():
             return
 
         paras = self._split_paragraphs(text)
-        words: List[str] = []
+        words: list[str] = []
         for p in paras:
             words.extend(p.split())
             words.append("\n\n")

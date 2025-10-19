@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from domain.services.vector_store import Chunk, VectorStore
 
@@ -25,8 +25,8 @@ class RetrievedChunk:
     score: float
     document_id: str
     content: str
-    chunk_id: Optional[str]
-    metadata: Dict[str, Any]
+    chunk_id: str | None
+    metadata: dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -35,7 +35,7 @@ class QueryRAGOutput:
     Resultado da consulta: lista de chunks recuperados.
     """
 
-    hits: List[RetrievedChunk]
+    hits: list[RetrievedChunk]
 
 
 class QueryRAG:
@@ -55,8 +55,8 @@ class QueryRAG:
 
         top_k = max(1, min(50, int(inp.top_k)))
 
-        results: List[Tuple[float, Chunk]] = self._store.similarity_search(q, top_k=top_k)
-        hits: List[RetrievedChunk] = [
+        results: list[tuple[float, Chunk]] = self._store.similarity_search(q, top_k=top_k)
+        hits: list[RetrievedChunk] = [
             RetrievedChunk(
                 score=float(score),
                 document_id=chunk.document_id,

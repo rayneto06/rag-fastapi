@@ -1,46 +1,46 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rag-fastapi"
+version = "0.1.0"
+description = "RAG (Retrieval-Augmented Generation) API built with FastAPI and Clean Architecture"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+readme = "README.md"
+authors = [{ name = "Raymundo Neto" }]
+
 [tool.black]
 line-length = 100
-target-version = ["py311"]
-exclude = """
-(
-  /(\\.git|\\.venv|env|venv|\\.mypy_cache|\\.pytest_cache|build|dist)/
-  | ^\\.chroma/
-  | ^data/
-)
-"""
+target-version = ["py310"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
-src = ["app", "domain", "use_cases", "infrastructure", "interface_adapters", "tests"]
+target-version = "py310"
 
 [tool.ruff.lint]
-select = ["E", "F", "I"]  # pycodestyle/pyflakes + isort
-ignore = ["E203", "E501"] # compat Black e linha longa já cuidada pelo Black
-
-[tool.ruff.lint.isort]
-known-first-party = ["app", "domain", "use_cases", "infrastructure", "interface_adapters", "tests"]
-combine-as-imports = true
+select = ["E", "F", "I", "B", "UP", "Q", "W"]
+fixable = ["ALL"]
 
 [tool.mypy]
-python_version = "3.11"
-warn_unused_ignores = true
-warn_redundant_casts = true
+python_version = "3.10"
+ignore_missing_imports = true
 warn_return_any = true
-no_implicit_optional = true
+warn_unused_ignores = true
 disallow_untyped_defs = true
-disallow_incomplete_defs = true
 check_untyped_defs = true
-pretty = true
-ignore_missing_imports = true  # 3rd parties sem stubs
-show_error_codes = true
-exclude = [
-  "\\.venv",
-  "^data/",
-  "^\\.chroma/",
-  "^build/",
-  "^dist/",
-]
+strict_optional = true
+no_implicit_optional = true
+plugins = []
 
 [tool.pytest.ini_options]
-addopts = "-q"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["app"]
+skip_gitignore = true

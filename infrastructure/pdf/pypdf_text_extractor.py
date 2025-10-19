@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Tuple
 
 from pypdf import PdfReader
 
@@ -9,7 +8,7 @@ from domain.services.text_extractor import TextExtractor
 
 
 class PyPDFTextExtractor(TextExtractor):
-    def extract(self, pdf_path: Path) -> Tuple[str, int]:
+    def extract(self, pdf_path: Path) -> tuple[str, int]:
         reader = PdfReader(str(pdf_path))
         pages = len(reader.pages)
         parts = []

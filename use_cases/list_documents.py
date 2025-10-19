@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
 
 from domain.entities.document import Document
 from domain.repositories.document_repository import DocumentRepository
@@ -9,7 +8,7 @@ from domain.repositories.document_repository import DocumentRepository
 
 @dataclass(frozen=True)
 class ListDocumentsOutput:
-    documents: List[Document]
+    documents: list[Document]
 
 
 class ListDocuments:

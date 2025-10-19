@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List
+from typing import Annotated
 
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 
@@ -32,8 +32,7 @@ def get_router(container: Container) -> APIRouter:
     @router.post(
         "/documents", response_model=DocumentDetailDTO, status_code=status.HTTP_201_CREATED
     )
-    async def upload_document(file: UploadFile = File(...)) -> DocumentDetailDTO:
-        # filename pode ser None; valide antes de usar .lower()
+    async def upload_document(file: Annotated[UploadFile, File(...)]) -> DocumentDetailDTO:
         if not file.filename or not file.filename.lower().endswith(".pdf"):
             raise HTTPException(status_code=400, detail="Apenas arquivos PDF são aceitos.")
 
@@ -53,7 +52,7 @@ def get_router(container: Container) -> APIRouter:
         # 2) Indexar no Vector Store a partir do arquivo .chunks.jsonl
         try:
             chunks_path = Path(result.chunks_path)
-            vs_chunks: List[VSChunk] = []
+            vs_chunks: list[VSChunk] = []
             with chunks_path.open("r", encoding="utf-8") as f:
                 for i, line in enumerate(f):
                     data = json.loads(line)
@@ -91,8 +90,8 @@ def get_router(container: Container) -> APIRouter:
             chunk_count=result.chunk_count,
         )
 
-    @router.get("/documents", response_model=List[DocumentListItemDTO])
-    def list_documents() -> List[DocumentListItemDTO]:
+    @router.get("/documents", response_model=list[DocumentListItemDTO])
+    def list_documents() -> list[DocumentListItemDTO]:
         result = controller.list()
         return [
             DocumentListItemDTO(

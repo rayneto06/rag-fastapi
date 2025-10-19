@@ -54,9 +54,7 @@ trailer
 startxref
 444
 %%EOF
-""".encode(
-        "utf-8"
-    )
+""".encode()
     return pdf
 
 

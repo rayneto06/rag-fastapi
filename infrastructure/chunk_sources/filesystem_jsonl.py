@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable, Iterator
 from pathlib import Path
-from typing import Any, Dict, Iterable, Iterator
+from typing import Any
 
 from domain.services.chunk_source import ChunkSource
 from domain.services.vector_store import Chunk
@@ -32,7 +33,7 @@ def _iter_file(path: Path, document_id: str) -> Iterator[Chunk]:
             line = line.strip()
             if not line:
                 continue
-            data: Dict[str, Any] = json.loads(line)
+            data: dict[str, Any] = json.loads(line)
             content = str(data.get("content", "")).strip()
             if not content:
                 continue

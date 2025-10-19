@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Iterable, Mapping, Optional, Protocol
+from typing import Protocol
 
 from domain.entities.document import Document
 
@@ -19,5 +20,5 @@ class DocumentRepository(Protocol):
     def save_meta(self, doc: Document, meta_path: Path) -> None: ...
 
     def list_documents(self) -> Iterable[Document]: ...
-    def get_document(self, doc_id: str) -> Optional[Document]: ...
+    def get_document(self, doc_id: str) -> Document | None: ...
     def count_chunks(self, doc_id: str) -> int: ...

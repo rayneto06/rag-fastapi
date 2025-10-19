@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from domain.entities.document import Document
 from domain.repositories.document_repository import DocumentRepository
@@ -19,7 +18,7 @@ class GetDocument:
     def __init__(self, repo: DocumentRepository) -> None:
         self.repo = repo
 
-    def execute(self, doc_id: str) -> Optional[GetDocumentOutput]:
+    def execute(self, doc_id: str) -> GetDocumentOutput | None:
         doc = self.repo.get_document(doc_id)
         if not doc:
             return None

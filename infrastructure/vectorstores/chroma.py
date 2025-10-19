@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any
 
 import chromadb
 from chromadb.api.models.Collection import Collection
@@ -16,10 +17,10 @@ class _HashingEmbeddingFunction(embedding_functions.EmbeddingFunction):
     def __init__(self, dim: int = 256) -> None:
         self.dim = int(dim)
 
-    def __call__(self, input: List[str]) -> List[List[float]]:
+    def __call__(self, input: list[str]) -> list[list[float]]:
         return [self._embed(x) for x in input]
 
-    def _embed(self, text: str) -> List[float]:
+    def _embed(self, text: str) -> list[float]:
         vec = [0.0] * self.dim
         for token in text.casefold().split():
             h = hash(token) % self.dim
@@ -46,15 +47,15 @@ class ChromaVectorStore(VectorStore):
         )
 
     def add(self, chunks: Iterable[Chunk]) -> int:
-        ids: List[str] = []
-        documents: List[str] = []
-        metadatas: List[Dict[str, Any]] = []
+        ids: list[str] = []
+        documents: list[str] = []
+        metadatas: list[dict[str, Any]] = []
 
         for idx, ch in enumerate(chunks):
             cid = ch.chunk_id or f"{ch.document_id}:{idx}"
             ids.append(cid)
             documents.append(ch.content)
-            meta: Dict[str, Any] = {"document_id": ch.document_id, "chunk_id": cid}
+            meta: dict[str, Any] = {"document_id": ch.document_id, "chunk_id": cid}
             for k, v in (ch.metadata or {}).items():
                 if k not in meta:
                     meta[k] = v
@@ -64,7 +65,7 @@ class ChromaVectorStore(VectorStore):
             return 0
 
         # Ajuste de tipagem: converte para lista de Mapping[str, Any]
-        from typing import Mapping
+        from collections.abc import Mapping
 
         metadatas_list: list[Mapping[str, Any]] = [m for m in metadatas]
         self._collection.upsert(
@@ -75,13 +76,13 @@ class ChromaVectorStore(VectorStore):
 
         return len(ids)
 
-    def similarity_search(self, query: str, top_k: int = 5) -> List[Tuple[float, Chunk]]:
+    def similarity_search(self, query: str, top_k: int = 5) -> list[tuple[float, Chunk]]:
         top_k = max(1, min(50, int(top_k)))
         if not query.strip():
             return []
 
         # Conversão explícita para tipos aceitos pelo SDK
-        include_fields: List[Any] = ["documents", "metadatas", "distances"]
+        include_fields: list[Any] = ["documents", "metadatas", "distances"]
         res = self._collection.query(
             query_texts=[query],
             n_results=top_k,
@@ -91,8 +92,8 @@ class ChromaVectorStore(VectorStore):
         metas = (res.get("metadatas") or [[]])[0]
         dists = (res.get("distances") or [[]])[0]
 
-        results: List[Tuple[float, Chunk]] = []
-        for doc, meta, dist in zip(docs, metas, dists):
+        results: list[tuple[float, Chunk]] = []
+        for doc, meta, dist in zip(docs, metas, dists, strict=False):
             try:
                 d = float(dist)
             except Exception:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Dict, Iterable, List, Tuple
+from collections.abc import Iterable
 
 from domain.services.vector_store import Chunk, VectorStore
 
@@ -13,7 +13,7 @@ class InMemoryVectorStore(VectorStore):
     """
 
     def __init__(self) -> None:
-        self._by_doc: Dict[str, List[Chunk]] = defaultdict(list)
+        self._by_doc: dict[str, list[Chunk]] = defaultdict(list)
 
     def add(self, chunks: Iterable[Chunk]) -> int:
         count = 0
@@ -22,9 +22,9 @@ class InMemoryVectorStore(VectorStore):
             count += 1
         return count
 
-    def similarity_search(self, query: str, top_k: int = 5) -> List[Tuple[float, Chunk]]:
+    def similarity_search(self, query: str, top_k: int = 5) -> list[tuple[float, Chunk]]:
         q = _tokenize(query)
-        scored: List[Tuple[float, Chunk]] = []
+        scored: list[tuple[float, Chunk]] = []
         for lst in self._by_doc.values():
             for ch in lst:
                 c = _tokenize(ch.content)
