@@ -14,3 +14,4 @@ ruff==0.6.9
 mypy==1.11.2
 types-requests==2.32.0.20240914
 pre-commit==4.0.1
+chromadb==0.5.11

@@ -9,7 +9,7 @@ from app.main import app
 async def test_healthcheck():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        resp = await ac.get("/v1/healthz")
+        resp = await ac.get("/v1/health")
     assert resp.status_code == status.HTTP_200_OK
     data = resp.json()
     assert data.get("status") == "ok"

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
@@ -13,6 +14,7 @@ from interface_adapters.dto.document_dto import (
     DocumentListItemDTO,
     DocumentDetailDTO,
 )
+from domain.services.vector_store import Chunk as VSChunk
 
 
 def get_router(container: Container) -> APIRouter:
@@ -29,32 +31,58 @@ def get_router(container: Container) -> APIRouter:
         if not file.filename.lower().endswith(".pdf"):
             raise HTTPException(status_code=400, detail="Apenas arquivos PDF são aceitos.")
 
-        # timezone-aware (UTC) para evitar DeprecationWarning
+        # salva upload temporário (no diretório RAW do repo)
         tmp_name = f"tmp__{datetime.now(timezone.utc).timestamp()}"
         tmp = container.document_repository.paths["RAW_DIR"] / tmp_name
         with tmp.open("wb") as f:
             f.write(await file.read())
 
-        out = controller.ingest(
+        # 1) Ingest (usa o caso de uso existente: salva raw/text/chunks/meta)
+        result = controller.ingest(
             tmp_file=tmp,
             original_filename=file.filename,
             content_type=file.content_type or "application/pdf",
         )
 
+        # 2) Indexar no Vector Store a partir do arquivo .chunks.jsonl
+        try:
+            chunks_path = Path(result.chunks_path)
+            vs_chunks: List[VSChunk] = []
+            with chunks_path.open("r", encoding="utf-8") as f:
+                for i, line in enumerate(f):
+                    data = json.loads(line)
+                    content = (data.get("content") or "").strip()
+                    if not content:
+                        continue
+                    meta = {k: v for k, v in data.items() if k != "content"}
+                    vs_chunks.append(
+                        VSChunk(
+                            document_id=result.document.id,
+                            content=content,
+                            chunk_id=f"{result.document.id}:{i}",
+                            metadata=meta,
+                        )
+                    )
+            if vs_chunks:
+                container.vector_store.add(vs_chunks)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Falha ao indexar chunks: {e}") from e
+
+        # 3) Resposta compatível com os testes e com o contrato atual
         meta = DocumentMetaDTO(
-            id=out.document.id,
-            filename=out.document.stored_filename,
-            original_filename=out.document.original_filename,
-            size_bytes=out.document.size_bytes,
-            pages=out.document.pages,
-            created_at=out.document.created_at,
-            content_type=out.document.content_type,
+            id=result.document.id,
+            filename=result.document.stored_filename,
+            original_filename=result.document.original_filename,
+            size_bytes=result.document.size_bytes,
+            pages=result.document.pages,
+            created_at=result.document.created_at,
+            content_type=result.document.content_type,
         )
         return DocumentDetailDTO(
             meta=meta,
-            text_path=out.text_path,
-            chunks_path=out.chunks_path,
-            chunk_count=out.chunk_count,
+            text_path=result.text_path,
+            chunks_path=result.chunks_path,
+            chunk_count=result.chunk_count,
         )
 
     @router.get("/documents", response_model=List[DocumentListItemDTO])
