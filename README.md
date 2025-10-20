@@ -38,16 +38,9 @@ tests/                    # Unit e E2E
 
 ---
 
-## 🗺️ Diagrama de fluxo (Mermaid)
+## 🗺️ Diagrama de fluxo
 
-```mermaid
-flowchart LR
-    A[Upload PDF] -->|/v1/documents (POST)| B[Salvar arquivo bruto (RAW_DIR)]
-    B --> C[Ingestão: extrair texto/particionar]
-    C --> D[Indexação no Vector Store (Chroma)]
-    E[Query] -->|/v1/rag/query (POST)| F[Retrieval: buscar top-k chunks]
-    F --> G[Resposta JSON com hits]
-```
+<img width="2232" height="396" alt="fluxo mermaid" src="https://github.com/user-attachments/assets/7926a506-7201-494b-b5db-6485c3b61f71" />
 
 ---
 
