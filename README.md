@@ -1,100 +1,193 @@
 # RAG FastAPI
 
-Projeto de **Retrieval-Augmented Generation (RAG)** com arquitetura limpa e modular, desenvolvido em **FastAPI**.
+RAG FastAPI é um projeto de referência em **Clean Architecture** para experimentos de
+**Retrieval-Augmented Generation (RAG)** com **FastAPI**. O objetivo é oferecer uma base
+sólida, testável e bem documentada para **upload**, **ingestão** e **consulta** (query) de
+documentos, com **vector store local (Chroma)** e endpoints REST claros.
+
+> Status atual: projeto estável, testado e sanitizado (mypy, ruff, black 100% verdes).
 
 ---
 
-## 🧱 Estrutura e objetivos
+## 🚀 Visão geral
 
-Este serviço fornece a base de um microserviço de RAG voltado à ingestão de documentos, armazenamento de embeddings e consultas semânticas.
+- **Upload** de PDFs via API.
+- **Ingestão**: particionamento/normalização e indexação no **Chroma**.
+- **Consulta (Query)**: recuperação (retrieval-first) a partir do índice vetorial.
+- **Clean Architecture**: domínio e casos de uso desacoplados de frameworks e de infraestrutura.
+- **Testes**: unitários e E2E cobrindo o fluxo principal.
 
-A arquitetura segue **Clean Architecture** e isola completamente as dependências de infraestrutura — permitindo alternar entre diferentes repositórios ou provedores de embeddings sem impactar o domínio.
+---
+
+## 🧱 Arquitetura (camadas)
 
 ```
-rag-fastapi/
-├── app/                     # Inicialização, container e configuração
-├── domain/                  # Entidades e interfaces puras
-├── use_cases/               # Casos de uso independentes
-├── infrastructure/           # Implementações concretas (PDF, Chroma, storage, etc.)
-├── interface_adapters/      # Controllers e rotas FastAPI
-└── tests/                   # Testes unitários e de integração
+app/
+├─ domain/                # Entidades e contratos puros (sem dependências externas)
+├─ use_cases/             # Orquestra lógica de negócio; usa apenas interfaces do domínio
+├─ infrastructure/        # Implementações (ex.: Chroma, FS local, parsers)
+└─ interface_adapters/    # Web/API (FastAPI), DTOs, mapeamentos de entrada/saída
+tests/                    # Unit e E2E
+```
+
+**Princípios-chave**
+- Domínio independente de frameworks.
+- Use cases finos, orquestrando repositórios/serviços via interfaces.
+- Adaptadores plugáveis na infraestrutura (ex.: trocar Chroma por pgvector futuramente).
+- Interface (FastAPI) apenas expõe/recebe dados (DTOs), sem lógica de negócio.
+
+---
+
+## 🗺️ Diagrama de fluxo (Mermaid)
+
+```mermaid
+flowchart LR
+    A[Upload PDF] -->|/v1/documents (POST)| B[Salvar arquivo bruto (RAW_DIR)]
+    B --> C[Ingestão: extrair texto/particionar]
+    C --> D[Indexação no Vector Store (Chroma)]
+    E[Query] -->|/v1/rag/query (POST)| F[Retrieval: buscar top-k chunks]
+    F --> G[Resposta JSON com hits]
 ```
 
 ---
 
-## ⚙️ Funcionalidades atuais
+## 📦 Requisitos
 
-### ✅ Documentos
-- Upload de PDFs com extração de texto e chunking automático.
-- Salvamento de artefatos (texto e chunks) em disco.
-- Indexação automática dos chunks no **Vector Store** configurado (`InMemory` ou **Chroma**).
-- Listagem e obtenção de metadados de documentos.
-
-### ✅ Vector Store
-- Implementações:
-  - `InMemoryVectorStore`: volátil, ideal para testes e CI.
-  - `ChromaVectorStore`: persistente e local, usando `chromadb`.
-- Indexação e busca por similaridade (L2 → escore invertido em 1/(1+d)).
-
-### ✅ RAG (Retrieval-Only por enquanto)
-- Endpoint `/v1/rag/query` para consulta de relevância textual com `top_k` ajustável.
-- Suporte a diferentes provedores de embeddings via contrato `VectorStore`.
-
-### ✅ Healthcheck
-- `/v1/health` para verificação de status e versão.
-
-### ✅ Testes
-- Suíte `pytest` completa e passando: ingestão, listagem, query e integração com Chroma.
-
-### ✅ Postman
-- Coleção e ambiente prontos (`RAG_FastAPI.postman_collection.json` e `RAG_FastAPI.postman_environment.json`)
-  - Upload → List → Get → Query já configurados.
+- Python 3.11+
+- pip / venv (ou uv / poetry, se preferir)
+- (Opcional) `uvicorn` para execução local
+- (Opcional) `pre-commit` para ganchos (ruff, black, trailing-whitespace, mypy)
 
 ---
 
-## 🧩 Configuração via `.env`
+## ⚙️ Configuração
+
+1) **Clonar o repositório**
 
 ```bash
-APP_PORT=8000
-APP_ENV=local
-
-CORS_ORIGINS=["http://localhost:3000","http://127.0.0.1:3000"]
-VECTOR_STORE_PROVIDER=chroma      # ou inmemory
-CHROMA_DIR=.chroma
-CHROMA_COLLECTION=rag_chunks
-DATA_DIR=./data
-RAW_DIR=./data/raw
-PROCESSED_DIR=./data/processed
-INDEX_DIR=./data/index
-KEEP_TEST_DATA=0
-ANONYMIZED_TELEMETRY=FALSE
+git clone https://github.com/rayneto06/rag-fastapi.git
+cd rag-fastapi
 ```
 
----
-
-## 🚀 Executar localmente
+2) **Criar e ativar o virtualenv**
 
 ```bash
-# Instalar dependências
+python -m venv .venv
+source .venv/bin/activate            # Linux/Mac
+# ou
+.\.venv\Scriptsctivate             # Windows
+```
+
+3) **Instalar dependências**
+
+```bash
+pip install -U pip
 pip install -r requirements.txt
+```
 
-# Executar API
-uvicorn app.main:app --reload
+4) **Arquivo `.env`**
 
-# Rodar testes
+Copie o `.env.example` para `.env` e ajuste os valores conforme seu ambiente:
+
+```bash
+cp .env.example .env
+```
+
+**Variáveis importantes**
+- `APP_PORT`: porta do servidor (ex.: 8000)
+- `APP_ENV`: ambiente (ex.: local)
+- `CORS_ORIGINS`: JSON com origens permitidas
+- `DATA_DIR`, `RAW_DIR`, `PROCESSED_DIR`, `INDEX_DIR`: diretórios de dados
+- `VECTOR_STORE_PROVIDER`: `chroma`
+- `CHROMA_DIR`, `CHROMA_COLLECTION`: diretório e coleção do Chroma
+- `KEEP_TEST_DATA`: se `1`, mantém arquivos gerados pelos testes E2E
+- `ANONYMIZED_TELEMETRY`: desligar/ligar telemetria de libs (quando aplicável)
+
+> Observação: caminhos relativos são resolvidos a partir da raiz do projeto.
+
+---
+
+## ▶️ Execução local
+
+```bash
+uvicorn app.main:app --reload --port ${APP_PORT:-8000}
+# API em: http://127.0.0.1:${APP_PORT:-8000}
+```
+
+### Rotas principais (v1)
+
+- `POST /v1/documents` – upload de PDF (gera entrada em RAW, processa e indexa)
+- `GET  /v1/documents` – lista documentos
+- `GET  /v1/documents/{document_id}` – detalhes de um documento
+- `POST /v1/rag/query` – consulta (retrieval-first) no índice vetorial
+
+---
+
+## 🧪 Testes
+
+### Rodar a suíte completa
+
+```bash
 pytest -q
 ```
 
-A API ficará disponível em `http://127.0.0.1:8000`
-A documentação interativa (Swagger) está em `http://127.0.0.1:8000/docs`
+### Linters e type checking
+
+```bash
+ruff .
+black --check .
+mypy .
+```
+
+### Pre-commit (opcional, mas recomendado)
+
+```bash
+pre-commit install
+pre-commit run -a
+```
 
 ---
 
-## 🔮 Próximo passo
+## 🔍 Testes E2E (resumo do que validam)
 
-### 🧠 Fase seguinte: **LLMProvider e geração de respostas**
-Implementar o caso de uso `QueryRAG` completo, com:
-1. **Interface `LLMProvider` no domínio** para abstrair qualquer modelo de linguagem.
-2. **Implementação local (ex: OllamaProvider)** para geração baseada no contexto recuperado.
-3. **Integração no endpoint `/v1/rag/query`**: combinar *retrieval + geração*.
-4. **Testes de integração** com mocks determinísticos para o LLM.
+Os E2E cobrem o **fluxo real de uso via API**, garantindo que:
+
+1. `POST /v1/documents` aceita um PDF de teste, armazena em **RAW**, processa e
+   executa a **ingestão** (particionamento/normalização) para **PROCESSED**.
+2. A **indexação** no **Chroma** é invocada e não gera exceções de integração.
+3. `GET /v1/documents` retorna o documento recém-enviado com metadados esperados.
+4. `POST /v1/rag/query` acessa o índice e retorna uma estrutura de **hits** (retrieval-first).
+   - Dependendo do conteúdo do PDF de teste e da parametrização, a lista pode vir vazia,
+     porém a **integração** (request/response, pipeline de retrieval) é verificada.
+5. `KEEP_TEST_DATA=0` limpa artefatos ao final; com `KEEP_TEST_DATA=1`, mantém para inspeção.
+
+Esses testes conferem **contratos de API**, **caminhos de dados** e a **orquestração** entre camadas,
+sem quebrar a independência do domínio/casos de uso.
+
+---
+
+## 🧩 Decisões de arquitetura (resumo)
+
+- **Vector Store:** **Chroma** local para simplicidade e velocidade em desenvolvimento.
+  A interface de repositório no domínio permite **substituição futura** (ex.: pgvector)
+  sem impacto no **use case** ou na camada web.
+- **Clean Architecture:** domínio e casos de uso **imutáveis** nesta fase; toda evolução é feita
+  via infraestrutura/adapters, preservando testabilidade e clareza.
+- **DTOs e validações:** definidos nos adapters para manter o domínio livre de detalhes HTTP.
+
+---
+
+## 🔜 Próximos passos
+
+- Implementar **geração** (o “G” do RAG) por trás do endpoint de query (mantendo a mesma
+  interface de retrieval).
+- Adicionar **observabilidade** (logs, métricas) por caso de uso.
+- Suporte a **outros provedores** de vector store via o mesmo contrato do domínio.
+
+---
+
+## 📄 Licença
+
+MIT.
+
+---
